@@ -1,0 +1,49 @@
+name: Download Wallpapers
+
+on:
+    workflow_dispatch:
+
+jobs:
+    run-script:
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: 'Checkout repository'
+          uses: actions/checkout@v2
+
+        - name: 'Set up Python'
+          uses: actions/setup-python@v2
+          with:
+                python-version: '3.x'
+
+        - name: Install dependencies
+          run: |
+                python -m pip install --upgrade pip
+                pip install -r requirements.txt
+
+        - name: Run Python script
+          run: python ./src/mksld.py
+
+        - name: Archive output folder
+          run: tar -czvf output.tar.gz output/
+
+        - name: Create Release
+          id: create_release
+          uses: actions/create-release@v1
+          env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            tag_name: mksld
+            release_name: mksld
+            draft: false
+            prerelease: false
+
+        - name: Upload Release Asset
+          uses: actions/upload-release-asset@v1
+          env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            upload_url: ${{ steps.create_release.outputs.upload_url }}
+            asset_path: ./output.tar.gz
+            asset_name: output.tar.gz
+            asset_content_type: application/gzip
